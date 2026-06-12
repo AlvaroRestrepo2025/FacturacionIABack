@@ -6,7 +6,7 @@ namespace FacturacionIABack.Controllers
     [Route("api/[controller]")]
     public class ClientesController : Controller
     {
-        
+        [HttpGet]
         public IActionResult Index()
         {
             return Ok("dato");
