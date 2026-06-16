@@ -1,6 +1,7 @@
-var builder = WebApplication.CreateBuilder(args);
+using BMFacturacionIABack.CierreSesion;
+using DMFacturacionIABack.CierreSesion;
 
-// Add services to the container.
+var builder = WebApplication.CreateBuilder(args);
 
 // Permite usar controladores API.
 builder.Services.AddControllers();
@@ -9,9 +10,38 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var app = builder.Build();
+// Configura CORS para permitir conexión desde Angular local.
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AngularPolicy", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
-// Configure the HTTP request pipeline.
+// Registra la capa de datos para cierre de sesión.
+// Aquí se toma la cadena de conexión desde appsettings.Development.json.
+builder.Services.AddScoped<IDMCierreSesion>(provider =>
+{
+    var configuration = provider.GetRequiredService<IConfiguration>();
+
+    var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException("No se encontró la cadena de conexión DefaultConnection.");
+    }
+
+    return new DMCierreSesion(connectionString);
+});
+
+// Registra la capa de negocio para cierre de sesión.
+builder.Services.AddScoped<IBMCierreSesion, BMCierreSesion>();
+
+var app = builder.Build();
 
 // Habilita Swagger solo en ambiente de desarrollo.
 if (app.Environment.IsDevelopment())
@@ -22,6 +52,9 @@ if (app.Environment.IsDevelopment())
 
 // Redirige las peticiones HTTP hacia HTTPS.
 app.UseHttpsRedirection();
+
+// Habilita CORS antes de autorización.
+app.UseCors("AngularPolicy");
 
 // Habilita autorización en la API.
 app.UseAuthorization();
