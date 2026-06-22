@@ -1,5 +1,7 @@
 using BMFacturacionIABack.CierreSesion;
 using DMFacturacionIABack.CierreSesion;
+using BMFacturacionIABack.UsuariosExternos;
+using DMFacturacionIABack.UsuariosExternos;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,8 +40,23 @@ builder.Services.AddScoped<IDMCierreSesion>(provider =>
     return new DMCierreSesion(connectionString);
 });
 
+builder.Services.AddScoped<IDMUsuariosExternos>(provider =>
+{
+    var configuration = provider.GetRequiredService<IConfiguration>();
+
+    var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException("No se encontró la cadena de conexión DefaultConnection.");
+    }
+
+    return new DMUsuariosExternos(connectionString);
+});
+
 // Registra la capa de negocio para cierre de sesión.
 builder.Services.AddScoped<IBMCierreSesion, BMCierreSesion>();
+builder.Services.AddScoped<IBMUsuariosExternos, BMUsuariosExternos>();
 
 var app = builder.Build();
 
