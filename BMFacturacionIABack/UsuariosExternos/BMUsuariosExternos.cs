@@ -1,19 +1,22 @@
 ﻿using DMFacturacionIABack.UsuariosExternos;
 using DTFacturacionIABack.UsuariosExternos;
+using BMFacturacionIABack.Services;
 using System.Net.Mail;
 using System.Linq;
-
 
 namespace BMFacturacionIABack.UsuariosExternos
 {
     public class BMUsuariosExternos : IBMUsuariosExternos
     {
         private readonly IDMUsuariosExternos _dmUsuariosExternos;
+        private readonly EmailService _emailService;
 
         public BMUsuariosExternos(
-            IDMUsuariosExternos dmUsuariosExternos)
+            IDMUsuariosExternos dmUsuariosExternos,
+            EmailService emailService)
         {
             _dmUsuariosExternos = dmUsuariosExternos;
+            _emailService = emailService;
         }
 
         public async Task<List<UsuarioExternoDto>> ObtenerUsuariosAsync()
@@ -53,6 +56,11 @@ namespace BMFacturacionIABack.UsuariosExternos
                 usuario,
                 passwordGenerada,
                 "Sistema");
+
+            await _emailService.EnviarCredencialesAsync(
+                usuario.Correo,
+                usuario.Nombre,
+                passwordGenerada);
         }
 
         public async Task ActualizarUsuarioAsync(ActualizarUsuarioExternoDto usuario)

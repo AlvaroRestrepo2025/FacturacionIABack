@@ -2,6 +2,7 @@ using BMFacturacionIABack.CierreSesion;
 using DMFacturacionIABack.CierreSesion;
 using BMFacturacionIABack.UsuariosExternos;
 using DMFacturacionIABack.UsuariosExternos;
+using BMFacturacionIABack.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,6 +58,7 @@ builder.Services.AddScoped<IDMUsuariosExternos>(provider =>
 // Registra la capa de negocio para cierre de sesión.
 builder.Services.AddScoped<IBMCierreSesion, BMCierreSesion>();
 builder.Services.AddScoped<IBMUsuariosExternos, BMUsuariosExternos>();
+builder.Services.AddScoped<EmailService>();
 
 var app = builder.Build();
 
