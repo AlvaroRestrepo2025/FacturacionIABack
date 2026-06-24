@@ -1,8 +1,11 @@
 using BMFacturacionIABack.CierreSesion;
+using BMFacturacionIABack.Empresas;
 using DMFacturacionIABack.CierreSesion;
 using BMFacturacionIABack.UsuariosExternos;
 using DMFacturacionIABack.UsuariosExternos;
 using BMFacturacionIABack.Services;
+using DMFacturacionIABack.Empresas;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,6 +62,25 @@ builder.Services.AddScoped<IDMUsuariosExternos>(provider =>
 builder.Services.AddScoped<IBMCierreSesion, BMCierreSesion>();
 builder.Services.AddScoped<IBMUsuariosExternos, BMUsuariosExternos>();
 builder.Services.AddScoped<EmailService>();
+
+// Registra la capa de datos para administración de empresas.
+// Esta clase usa ADO.NET y ejecuta los procedimientos almacenados de la HU-005.
+builder.Services.AddScoped<IDMEmpresas>(provider =>
+{
+    var configuration = provider.GetRequiredService<IConfiguration>();
+
+    var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException("No se encontró la cadena de conexión DefaultConnection.");
+    }
+
+    return new DMEmpresas(connectionString);
+});
+
+// Registra la capa de negocio para administración de empresas.
+builder.Services.AddScoped<IBMEmpresas, BMEmpresas>();
 
 var app = builder.Build();
 
