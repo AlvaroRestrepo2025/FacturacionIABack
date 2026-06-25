@@ -6,12 +6,9 @@ namespace BMFacturacionIABack.CierreSesion
     {
         Task<CierreSesionResponseDto> RegistrarCierreSesionAsync(
             CierreSesionRequestDto request,
-            int? idUsuario,
             string? nombreUsuario,
-            string? tipoUsuario,
-            string? direccionIp,
-            string? userAgent,
-            string? tokenReferencia
+            string? apellido,
+            string? rol
         );
     }
 }

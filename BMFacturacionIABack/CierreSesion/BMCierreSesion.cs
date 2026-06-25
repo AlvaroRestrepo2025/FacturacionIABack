@@ -14,12 +14,9 @@ namespace BMFacturacionIABack.CierreSesion
 
         public async Task<CierreSesionResponseDto> RegistrarCierreSesionAsync(
             CierreSesionRequestDto request,
-            int? idUsuario,
             string? nombreUsuario,
-            string? tipoUsuario,
-            string? direccionIp,
-            string? userAgent,
-            string? tokenReferencia
+            string? apellido,
+            string? rol
         )
         {
             if (request == null)
@@ -31,42 +28,53 @@ namespace BMFacturacionIABack.CierreSesion
                 };
             }
 
-            if (string.IsNullOrWhiteSpace(request.TipoCierre))
+            if (string.IsNullOrWhiteSpace(request.Motivo))
             {
                 return new CierreSesionResponseDto
                 {
                     Exito = false,
-                    Mensaje = "El tipo de cierre es obligatorio."
-                };
-            }
-
-            if (request.TipoCierre != "Manual" && request.TipoCierre != "Inactividad")
-            {
-                return new CierreSesionResponseDto
-                {
-                    Exito = false,
-                    Mensaje = "El tipo de cierre no es válido. Use Manual o Inactividad."
+                    Mensaje = "El motivo de cierre de sesión es obligatorio."
                 };
             }
 
             string nombreUsuarioFinal = string.IsNullOrWhiteSpace(nombreUsuario)
                 ? "UsuarioTemporalHU002"
-                : nombreUsuario;
+                : nombreUsuario.Trim();
 
-            string motivo = request.TipoCierre == "Inactividad"
-                ? "Cierre automático por inactividad."
-                : "Cierre manual de sesión.";
+            string? apellidoFinal = string.IsNullOrWhiteSpace(apellido)
+                ? null
+                : apellido.Trim();
+
+            string? rolFinal = string.IsNullOrWhiteSpace(rol)
+                ? "Facturacion"
+                : rol.Trim();
+
+            string motivoFinal = NormalizarMotivo(request.Motivo);
 
             return await _dmCierreSesion.RegistrarCierreSesionAsync(
-                idUsuario,
                 nombreUsuarioFinal,
-                request.TipoCierre,
-                motivo,
-                tipoUsuario,
-                direccionIp,
-                userAgent,
-                tokenReferencia
+                apellidoFinal,
+                motivoFinal,
+                rolFinal,
+                true
             );
+        }
+
+        private static string NormalizarMotivo(string motivo)
+        {
+            string motivoNormalizado = motivo.Trim();
+
+            if (motivoNormalizado.Equals("Manual", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Cierre manual de sesión.";
+            }
+
+            if (motivoNormalizado.Equals("Inactividad", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Cierre automático por inactividad.";
+            }
+
+            return motivoNormalizado;
         }
     }
 }
