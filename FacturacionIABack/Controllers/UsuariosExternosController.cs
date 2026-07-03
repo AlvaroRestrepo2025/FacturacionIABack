@@ -27,7 +27,7 @@ namespace FacturacionIABack.Controllers
 
         [HttpPost]
         public async Task<IActionResult> CrearUsuario(
-            [FromBody] CrearUsuarioExternoDto usuario)
+    [FromBody] CrearUsuarioExternoDto usuario)
         {
             await _bmUsuariosExternos.CrearUsuarioAsync(usuario);
 

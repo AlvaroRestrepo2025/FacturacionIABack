@@ -52,8 +52,7 @@ namespace BMFacturacionIABack.Services
                     $@"<p>Hola {nombre},</p>
                        <p>Su usuario fue creado correctamente.</p>
                        <p><strong>Correo:</strong> {correoDestino}</p>
-                       <p><strong>Contraseña:</strong> {password}</p>
-                       <p>Por favor cambie la contraseña al iniciar sesión.</p>"
+                       <p><strong>Contraseña:</strong> {password}</p>"
             };
 
             mensaje.Body = builder.ToMessageBody();
