@@ -822,6 +822,10 @@ GO
 --Guillermo:
 
 --HU 006 06/07/2026
+/*==============================================================
+TABLA: SolicitudesCargaDocumentos
+==============================================================*/
+
 CREATE TABLE dbo.SolicitudesCargaDocumentos
 (
     IdSolicitud INT IDENTITY(1,1) NOT NULL,
@@ -853,7 +857,7 @@ CREATE TABLE dbo.SolicitudesCargaDocumentos
 
     CONSTRAINT FK_SolicitudesCargaDocumentos_Empresas
         FOREIGN KEY (IdEmpresa)
-        REFERENCES Empresas(IdEmpresa),
+        REFERENCES dbo.Empresas(IdEmpresa),
 
     CONSTRAINT CK_SolicitudesCargaDocumentos_Cantidad
         CHECK (CantidadArchivos > 0),
@@ -874,80 +878,75 @@ CREATE TABLE dbo.SolicitudesCargaDocumentos
             )
         )
 );
+GO
 
------------------------------------------------------
+/*==============================================================
+TABLA: SolicitudCargaDocumentoArchivos
+==============================================================*/
+
 CREATE TABLE dbo.SolicitudCargaDocumentoArchivos
-    (
-        IdArchivo INT IDENTITY(1,1) NOT NULL,
+(
+    IdArchivo INT IDENTITY(1,1) NOT NULL,
 
-        IdSolicitud INT NOT NULL,
+    IdSolicitud INT NOT NULL,
 
-        NombreOriginal NVARCHAR(300) NOT NULL,
+    NombreOriginal NVARCHAR(300) NOT NULL,
 
-        NombreServidor NVARCHAR(300) NOT NULL,
+    NombreServidor NVARCHAR(300) NOT NULL,
 
-        Ruta NVARCHAR(500) NOT NULL,
+    Ruta NVARCHAR(500) NOT NULL,
 
-        Extension NVARCHAR(10) NOT NULL,
+    Extension NVARCHAR(10) NOT NULL,
 
-        Tamano BIGINT NOT NULL,
+    Tamano BIGINT NOT NULL,
 
-        FechaCreacion DATETIME2 NOT NULL
-            CONSTRAINT DF_SolicitudCargaDocumentoArchivos_FechaCreacion
-            DEFAULT SYSUTCDATETIME(),
+    FechaCreacion DATETIME2 NOT NULL
+        CONSTRAINT DF_SolicitudCargaDocumentoArchivos_FechaCreacion
+        DEFAULT SYSUTCDATETIME(),
 
-        CONSTRAINT PK_SolicitudCargaDocumentoArchivos
-            PRIMARY KEY (IdArchivo),
+    CONSTRAINT PK_SolicitudCargaDocumentoArchivos
+        PRIMARY KEY (IdArchivo),
 
-        CONSTRAINT FK_SolicitudCargaDocumentoArchivos_Solicitud
-            FOREIGN KEY (IdSolicitud)
-            REFERENCES SolicitudesCargaDocumentos(IdSolicitud)
-            ON DELETE CASCADE
-    );
+    CONSTRAINT FK_SolicitudCargaDocumentoArchivos_Solicitud
+        FOREIGN KEY (IdSolicitud)
+        REFERENCES dbo.SolicitudesCargaDocumentos(IdSolicitud)
+        ON DELETE CASCADE
+);
+GO
 
------------------------------------------------
-CREATE OR ALTER PROCEDURE sp_ConsultarDocumentos
+/*==============================================================
+SP: Consultar Documentos
+==============================================================*/
+
+CREATE OR ALTER PROCEDURE dbo.sp_ConsultarDocumentos
 AS
 BEGIN
-
     SET NOCOUNT ON;
 
     SELECT
-
         s.IdSolicitud,
-
         s.Identificador,
-
         e.IdEmpresa,
-
         e.Nit,
-
         e.RazonSocial AS Empresa,
-
         s.CantidadArchivos,
-
         s.UsuarioCreacion,
-
         s.FechaCreacion,
-
         s.UsuarioModificacion,
-
         s.FechaModificacion,
-
         s.Estado
-
-    FROM SolicitudesCargaDocumentos s
-
-    INNER JOIN Empresas e
+    FROM dbo.SolicitudesCargaDocumentos s
+    INNER JOIN dbo.Empresas e
         ON e.IdEmpresa = s.IdEmpresa
-
     ORDER BY s.FechaCreacion DESC;
-
-END
+END;
 GO
 
----------------------------------------------------
-CREATE OR ALTER PROCEDURE sp_CrearDocumento
+/*==============================================================
+SP: Crear Documento
+==============================================================*/
+
+CREATE OR ALTER PROCEDURE dbo.sp_CrearDocumento
 (
     @IdEmpresa INT,
     @CantidadArchivos INT,
@@ -955,10 +954,9 @@ CREATE OR ALTER PROCEDURE sp_CrearDocumento
 )
 AS
 BEGIN
-
     SET NOCOUNT ON;
 
-    INSERT INTO SolicitudesCargaDocumentos
+    INSERT INTO dbo.SolicitudesCargaDocumentos
     (
         IdEmpresa,
         CantidadArchivos,
@@ -971,12 +969,15 @@ BEGIN
         @UsuarioCreacion
     );
 
-    SELECT SCOPE_IDENTITY();
-
-END
+    SELECT CAST(SCOPE_IDENTITY() AS INT) AS IdSolicitud;
+END;
 GO
------------------------------------------------------
-CREATE OR ALTER PROCEDURE sp_CrearDocumentoArchivo
+
+/*==============================================================
+SP: Crear Documento Archivo
+==============================================================*/
+
+CREATE OR ALTER PROCEDURE dbo.sp_CrearDocumentoArchivo
 (
     @IdSolicitud INT,
     @NombreOriginal NVARCHAR(300),
@@ -987,10 +988,9 @@ CREATE OR ALTER PROCEDURE sp_CrearDocumentoArchivo
 )
 AS
 BEGIN
-
     SET NOCOUNT ON;
 
-    INSERT INTO SolicitudCargaDocumentoArchivos
+    INSERT INTO dbo.SolicitudCargaDocumentoArchivos
     (
         IdSolicitud,
         NombreOriginal,
@@ -1008,11 +1008,14 @@ BEGIN
         @Extension,
         @Tamano
     );
-
-END
+END;
 GO
---------------------------------------------------------
-CREATE OR ALTER PROCEDURE sp_ActualizarDocumento
+
+/*==============================================================
+SP: Actualizar Documento
+==============================================================*/
+
+CREATE OR ALTER PROCEDURE dbo.sp_ActualizarDocumento
 (
     @IdSolicitud INT,
     @IdEmpresa INT,
@@ -1022,12 +1025,10 @@ CREATE OR ALTER PROCEDURE sp_ActualizarDocumento
 )
 AS
 BEGIN
-
     SET NOCOUNT ON;
 
-    UPDATE SolicitudesCargaDocumentos
+    UPDATE dbo.SolicitudesCargaDocumentos
     SET
-
         IdEmpresa = @IdEmpresa,
 
         Estado = @Estado,
@@ -1041,26 +1042,25 @@ BEGIN
 
         UsuarioModificacion = @UsuarioModificacion,
 
-        FechaModificacion = GETDATE()
-
+        FechaModificacion = SYSUTCDATETIME()
     WHERE IdSolicitud = @IdSolicitud;
-
-END
+END;
 GO
-----------------------------------------------------
-CREATE OR ALTER PROCEDURE sp_EliminarDocumentoArchivos
+
+/*==============================================================
+SP: Eliminar Archivos de una Solicitud
+==============================================================*/
+
+CREATE OR ALTER PROCEDURE dbo.sp_EliminarDocumentoArchivos
 (
     @IdSolicitud INT
 )
 AS
 BEGIN
-
     SET NOCOUNT ON;
 
     DELETE
-    FROM SolicitudCargaDocumentoArchivos
+    FROM dbo.SolicitudCargaDocumentoArchivos
     WHERE IdSolicitud = @IdSolicitud;
-
-END
+END;
 GO
-
