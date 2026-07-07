@@ -6,8 +6,8 @@
 
         public string Mensaje { get; set; } = string.Empty;
 
-        public int? IdAuditoriaCierreSesion { get; set; }
+        public int? IdAuditoriaSesion { get; set; }
 
-        public DateTime? FechaCierre { get; set; }
+        public DateTime? Fecha { get; set; }
     }
 }

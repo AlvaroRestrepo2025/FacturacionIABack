@@ -19,22 +19,15 @@ namespace FacturacionIABack.Controllers
         [HttpPost("logout")]
         public async Task<IActionResult> Logout([FromBody] CierreSesionRequestDto request)
         {
-            string? tokenReferencia = ObtenerTokenDesdeHeader();
-            string? direccionIp = HttpContext.Connection.RemoteIpAddress?.ToString();
-            string? userAgent = Request.Headers.UserAgent.ToString();
-
-            int? idUsuario = ObtenerIdUsuarioDesdeClaims();
             string? nombreUsuario = ObtenerNombreUsuarioDesdeClaims();
-            string? tipoUsuario = ObtenerTipoUsuarioDesdeClaims();
+            string? apellido = ObtenerApellidoDesdeClaims();
+            string? rol = ObtenerRolDesdeClaims();
 
             CierreSesionResponseDto respuesta = await _bmCierreSesion.RegistrarCierreSesionAsync(
                 request,
-                idUsuario,
                 nombreUsuario,
-                tipoUsuario,
-                direccionIp,
-                userAgent,
-                tokenReferencia
+                apellido,
+                rol
             );
 
             if (!respuesta.Exito)
@@ -45,49 +38,32 @@ namespace FacturacionIABack.Controllers
             return Ok(respuesta);
         }
 
-        private string? ObtenerTokenDesdeHeader()
-        {
-            string authorizationHeader = Request.Headers.Authorization.ToString();
-
-            if (string.IsNullOrWhiteSpace(authorizationHeader))
-            {
-                return null;
-            }
-
-            if (authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-            {
-                return authorizationHeader.Replace("Bearer ", string.Empty, StringComparison.OrdinalIgnoreCase).Trim();
-            }
-
-            return authorizationHeader;
-        }
-
-        private int? ObtenerIdUsuarioDesdeClaims()
-        {
-            string? idUsuarioClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                ?? User.FindFirstValue("IdUsuario")
-                ?? User.FindFirstValue("idUsuario");
-
-            if (int.TryParse(idUsuarioClaim, out int idUsuario))
-            {
-                return idUsuario;
-            }
-
-            return null;
-        }
-
         private string? ObtenerNombreUsuarioDesdeClaims()
         {
             return User.FindFirstValue(ClaimTypes.Name)
                 ?? User.FindFirstValue("NombreUsuario")
                 ?? User.FindFirstValue("nombreUsuario")
+                ?? User.FindFirstValue("Usuario")
+                ?? User.FindFirstValue("usuario")
                 ?? User.Identity?.Name;
         }
 
-        private string? ObtenerTipoUsuarioDesdeClaims()
+        private string? ObtenerApellidoDesdeClaims()
         {
-            return User.FindFirstValue("TipoUsuario")
-                ?? User.FindFirstValue("tipoUsuario");
+            return User.FindFirstValue(ClaimTypes.Surname)
+                ?? User.FindFirstValue("Apellido")
+                ?? User.FindFirstValue("apellido")
+                ?? User.FindFirstValue("Apellidos")
+                ?? User.FindFirstValue("apellidos");
+        }
+
+        private string? ObtenerRolDesdeClaims()
+        {
+            return User.FindFirstValue(ClaimTypes.Role)
+                ?? User.FindFirstValue("Rol")
+                ?? User.FindFirstValue("rol")
+                ?? User.FindFirstValue("Area")
+                ?? User.FindFirstValue("area");
         }
     }
 }
