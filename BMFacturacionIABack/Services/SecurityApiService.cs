@@ -63,6 +63,7 @@ namespace BMFacturacionIABack.Services
             return resultado.Resultado.Select(x => new UsuarioExternoDto
             {
                 IdUsuarioExterno = x.UsuarioId,
+                Usuario = x.Usuario,
                 Nombre = $"{x.Nombre} {x.Apellido}".Trim(),
                 Correo = x.Correo,
                 Notas = x.Notas ?? "",

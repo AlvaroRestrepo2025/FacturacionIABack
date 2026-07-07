@@ -45,33 +45,46 @@ namespace BMFacturacionIABack.UsuariosExternos
             }
 
             try
-            {
+{
                 MailAddress correo = new(usuario.Correo);
             }
-            catch
-            {
+catch
+{
                 throw new Exception("El correo no tiene un formato válido.");
+            }
+
+            var usuarios = await _securityApiService.ObtenerUsuariosAsync();
+
+            if (usuarios.Any(u => u.Correo.Equals(usuario.Correo, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new Exception("Ya existe un usuario registrado con ese correo electrónico.");
+            }
+
+            var usuarioGenerado = GenerarUsuario(usuario.Nombre);
+
+            if (usuarios.Any(u => u.Usuario.Equals(usuarioGenerado, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new Exception("Ya existe un usuario registrado con ese nombre de usuario.");
             }
 
             string passwordGenerada = GenerarPassword();
 
-            var (nombre, apellido) =SepararNombre(usuario.Nombre);
+            var (nombre, apellido) = SepararNombre(usuario.Nombre);
 
-            var usuarioSeguridad =
-                new SecurityApiRegistrarUsuarioDto
+            var usuarioSeguridad = new SecurityApiRegistrarUsuarioDto
+            {
+                Nombre = nombre,
+                Apellido = apellido,
+                Correo = usuario.Correo,
+                Cargo = "Contabler",
+                Notas = usuario.Notas,
+                UsuarioRegistro = usuario.UsuarioRegistro,
+                Credenciales = new SecurityLoginDto
                 {
-                    Nombre = nombre,
-                    Apellido = apellido,
-                    Correo = usuario.Correo,
-                    Cargo = "Contabler",
-                    Notas = usuario.Notas,
-                    UsuarioRegistro = usuario.UsuarioRegistro,
-                    Credenciales = new SecurityLoginDto
-                    {
-                        Usuario = GenerarUsuario(usuario.Nombre),
-                        Contrasena = passwordGenerada
-                    }
-                };
+                    Usuario = usuarioGenerado,
+                    Contrasena = passwordGenerada
+                }
+            };
 
             try
             {
