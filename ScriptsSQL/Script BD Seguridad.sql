@@ -1,17 +1,28 @@
-USE db_SecurityPositivo
+USE db_SecurityPositivo;
 GO
-ALTER TABLE Usuarios ADD Notas VARCHAR(200) --no poner not null
---no crear columna estado sino usar columna activo
---Juan Guillermo HU 006 06/07/2026
 
-ALTER TABLE Usuarios
+/*==============================================================
+HU 006 - Juan Guillermo - 06/07/2026
+Agregar nuevas columnas
+==============================================================*/
+
+ALTER TABLE dbo.Usuarios
+ADD Notas VARCHAR(200) NULL;
+GO
+
+ALTER TABLE dbo.Usuarios
 ADD UsuarioModificacion VARCHAR(100) NULL;
+GO
 
-ALTER TABLE Usuarios
+ALTER TABLE dbo.Usuarios
 ADD FechaModificacion DATETIME NULL;
+GO
 
------------------------------------------------
-CREATE PROCEDURE SP_ConsultarUsuarios
+/*==============================================================
+SP: Consultar Usuarios
+==============================================================*/
+
+CREATE OR ALTER PROCEDURE dbo.SP_ConsultarUsuarios
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -29,13 +40,17 @@ BEGIN
         FechaRegistro,
         UsuarioModificacion,
         FechaModificacion
-    FROM Usuarios
+    FROM dbo.Usuarios
     WHERE Cargo = 'Contabler'
     ORDER BY FechaRegistro DESC;
-END
+END;
 GO
 
-CREATE PROCEDURE [dbo].[SP_ActualizarUsuario]
+/*==============================================================
+SP: Actualizar Usuario
+==============================================================*/
+
+CREATE OR ALTER PROCEDURE dbo.SP_ActualizarUsuario
 (
     @IN_UsuarioId INT,
     @IN_Nombre VARCHAR(50),
@@ -50,7 +65,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    UPDATE Usuarios
+    UPDATE dbo.Usuarios
     SET
         Nombre = @IN_Nombre,
         Apellido = @IN_Apellido,
@@ -64,8 +79,12 @@ BEGIN
 END;
 GO
 
-------------------------------------------------------------
-CREATE PROCEDURE [dbo].[SP_RegistrarUsuario]
+/*==============================================================
+SP: Registrar Usuario
+==============================================================*/
+
+CREATE OR ALTER PROCEDURE dbo.SP_RegistrarUsuario
+(
     @IN_Nombre VARCHAR(50),
     @IN_Apellido VARCHAR(100),
     @IN_Correo VARCHAR(100),
@@ -76,11 +95,12 @@ CREATE PROCEDURE [dbo].[SP_RegistrarUsuario]
     @IN_UsuarioRegistro VARCHAR(100),
     @IN_Notas VARCHAR(200) = NULL,
     @OUT_ConsultaId INT OUTPUT
+)
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    INSERT INTO Usuarios
+    INSERT INTO dbo.Usuarios
     (
         Nombre,
         Apellido,
@@ -109,6 +129,6 @@ BEGIN
         @IN_Notas
     );
 
-    SET @OUT_ConsultaId = SCOPE_IDENTITY();
+    SET @OUT_ConsultaId = CAST(SCOPE_IDENTITY() AS INT);
 END;
 GO
