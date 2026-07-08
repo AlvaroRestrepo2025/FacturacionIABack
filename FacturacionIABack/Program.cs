@@ -1,16 +1,21 @@
 using BMFacturacionIABack.CierreSesion;
+using BMFacturacionIABack.Documentos;
 using BMFacturacionIABack.Empresas;
 using BMFacturacionIABack.Monedas;
 using BMFacturacionIABack.RegistrosFacturacion;
 using BMFacturacionIABack.Services;
 using BMFacturacionIABack.UsuariosExternos;
 using DMFacturacionIABack.CierreSesion;
+using DMFacturacionIABack.Documentos;
 using DMFacturacionIABack.Empresas;
 using DMFacturacionIABack.Monedas;
 using DMFacturacionIABack.RegistrosFacturacion;
 using DMFacturacionIABack.UsuariosExternos;
+using FacturacionIABack.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.WebHost.UseUrls("https://localhost:7066", "http://localhost:5062");
 
 // Permite usar controladores API.
 builder.Services.AddControllers();
@@ -61,10 +66,39 @@ builder.Services.AddScoped<IDMUsuariosExternos>(provider =>
     return new DMUsuariosExternos(connectionString);
 });
 
-// Registra la capa de negocio para cierre de sesión y usuarios externos.
+// Registra la capa de datos para documentos.
+builder.Services.AddScoped<IDMDocumentos>(provider =>
+{
+    var configuration = provider.GetRequiredService<IConfiguration>();
+
+    var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException(
+            "No se encontró la cadena de conexión DefaultConnection.");
+    }
+
+    return new DMDocumentos(connectionString);
+});
+
+// Registra la capa de negocio para cierre de sesión, usuarios externos y documentos.
 builder.Services.AddScoped<IBMCierreSesion, BMCierreSesion>();
 builder.Services.AddScoped<IBMUsuariosExternos, BMUsuariosExternos>();
+builder.Services.AddScoped<IBMDocumentos, BMDocumentos>();
+
+// Registra servicios transversales.
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+
+builder.Services.AddHttpClient<ISecurityApiService, SecurityApiService>(
+    (provider, client) =>
+    {
+        var configuration = provider.GetRequiredService<IConfiguration>();
+
+        client.BaseAddress = new Uri(
+            configuration["SecurityApi:BaseUrl"]!);
+    });
 
 // Registra la capa de datos para administración de empresas.
 builder.Services.AddScoped<IDMEmpresas>(provider =>
@@ -121,6 +155,8 @@ builder.Services.AddScoped<IDMRegistrosFacturacion>(provider =>
 builder.Services.AddScoped<IBMRegistrosFacturacion, BMRegistrosFacturacion>();
 
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionMiddleware>();
 
 // Habilita Swagger solo en ambiente de desarrollo.
 if (app.Environment.IsDevelopment())
