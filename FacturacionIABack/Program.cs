@@ -1,14 +1,17 @@
 using BMFacturacionIABack.CierreSesion;
-using BMFacturacionIABack.Empresas;
-using DMFacturacionIABack.CierreSesion;
-using BMFacturacionIABack.UsuariosExternos;
-using DMFacturacionIABack.UsuariosExternos;
-using BMFacturacionIABack.Services;
-using DMFacturacionIABack.Empresas;
-using DMFacturacionIABack.Documentos;
 using BMFacturacionIABack.Documentos;
+using BMFacturacionIABack.Empresas;
+using BMFacturacionIABack.Monedas;
+using BMFacturacionIABack.RegistrosFacturacion;
+using BMFacturacionIABack.Services;
+using BMFacturacionIABack.UsuariosExternos;
+using DMFacturacionIABack.CierreSesion;
+using DMFacturacionIABack.Documentos;
+using DMFacturacionIABack.Empresas;
+using DMFacturacionIABack.Monedas;
+using DMFacturacionIABack.RegistrosFacturacion;
+using DMFacturacionIABack.UsuariosExternos;
 using FacturacionIABack.Middleware;
-
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,7 +37,6 @@ builder.Services.AddCors(options =>
 });
 
 // Registra la capa de datos para cierre de sesión.
-// Aquí se toma la cadena de conexión desde appsettings.Development.json.
 builder.Services.AddScoped<IDMCierreSesion>(provider =>
 {
     var configuration = provider.GetRequiredService<IConfiguration>();
@@ -49,6 +51,7 @@ builder.Services.AddScoped<IDMCierreSesion>(provider =>
     return new DMCierreSesion(connectionString);
 });
 
+// Registra la capa de datos para usuarios externos.
 builder.Services.AddScoped<IDMUsuariosExternos>(provider =>
 {
     var configuration = provider.GetRequiredService<IConfiguration>();
@@ -63,6 +66,7 @@ builder.Services.AddScoped<IDMUsuariosExternos>(provider =>
     return new DMUsuariosExternos(connectionString);
 });
 
+// Registra la capa de datos para documentos.
 builder.Services.AddScoped<IDMDocumentos>(provider =>
 {
     var configuration = provider.GetRequiredService<IConfiguration>();
@@ -78,11 +82,13 @@ builder.Services.AddScoped<IDMDocumentos>(provider =>
     return new DMDocumentos(connectionString);
 });
 
-// Registra la capa de negocio para cierre de sesión.
+// Registra la capa de negocio para cierre de sesión, usuarios externos y documentos.
 builder.Services.AddScoped<IBMCierreSesion, BMCierreSesion>();
 builder.Services.AddScoped<IBMUsuariosExternos, BMUsuariosExternos>();
-builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<IBMDocumentos, BMDocumentos>();
+
+// Registra servicios transversales.
+builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 
 builder.Services.AddHttpClient<ISecurityApiService, SecurityApiService>(
@@ -95,7 +101,6 @@ builder.Services.AddHttpClient<ISecurityApiService, SecurityApiService>(
     });
 
 // Registra la capa de datos para administración de empresas.
-// Esta clase usa ADO.NET y ejecuta los procedimientos almacenados de la HU-005.
 builder.Services.AddScoped<IDMEmpresas>(provider =>
 {
     var configuration = provider.GetRequiredService<IConfiguration>();
@@ -112,6 +117,42 @@ builder.Services.AddScoped<IDMEmpresas>(provider =>
 
 // Registra la capa de negocio para administración de empresas.
 builder.Services.AddScoped<IBMEmpresas, BMEmpresas>();
+
+// Registra la capa de datos para catálogo de monedas.
+builder.Services.AddScoped<IDMMonedas>(provider =>
+{
+    var configuration = provider.GetRequiredService<IConfiguration>();
+
+    var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException("No se encontró la cadena de conexión DefaultConnection.");
+    }
+
+    return new DMMonedas(connectionString);
+});
+
+// Registra la capa de negocio para catálogo de monedas.
+builder.Services.AddScoped<IBMMonedas, BMMonedas>();
+
+// Registra la capa de datos para consulta y descarga de registros para facturación.
+builder.Services.AddScoped<IDMRegistrosFacturacion>(provider =>
+{
+    var configuration = provider.GetRequiredService<IConfiguration>();
+
+    var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException("No se encontró la cadena de conexión DefaultConnection.");
+    }
+
+    return new DMRegistrosFacturacion(connectionString);
+});
+
+// Registra la capa de negocio para consulta y descarga de registros para facturación.
+builder.Services.AddScoped<IBMRegistrosFacturacion, BMRegistrosFacturacion>();
 
 var app = builder.Build();
 
