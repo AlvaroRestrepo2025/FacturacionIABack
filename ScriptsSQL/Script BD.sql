@@ -1072,71 +1072,50 @@ GO
    Reutiliza la tabla Empresas de HU-005.
    ========================================================= */
 
-SET ANSI_NULLS ON;
+SET ANSI_NULLS ON
 GO
 
-SET QUOTED_IDENTIFIER ON;
+SET QUOTED_IDENTIFIER ON
 GO
 
 IF OBJECT_ID('[dbo].[RegistrosFacturacion]', 'U') IS NULL
 BEGIN
     CREATE TABLE [dbo].[RegistrosFacturacion]
     (
-        [IdRegistroFacturacion] [int] IDENTITY(1,1) NOT NULL,
-        [NumeroRegistro] [nvarchar](50) NOT NULL,
-        [IdEmpresa] [int] NOT NULL,
-        [FechaCreacion] [datetime2](0) NOT NULL,
-        [Descripcion] [nvarchar](300) NOT NULL,
-        [Valor] [decimal](18,2) NOT NULL,
-        [Estado] [nvarchar](20) NOT NULL,
-        [UsuarioCreacion] [nvarchar](100) NOT NULL,
-        [FechaModificacion] [datetime2](0) NULL,
-        [UsuarioModificacion] [nvarchar](100) NULL,
-        [Activo] [bit] NOT NULL,
+        [IdRegistroFacturacion] INT IDENTITY(1,1) NOT NULL,
+        [NumeroRegistro] NVARCHAR(50) NOT NULL,
+        [IdEmpresa] INT NOT NULL,
+        [FechaCreacion] DATETIME2(0) NOT NULL,
+        [Descripcion] NVARCHAR(300) NOT NULL,
+        [Valor] DECIMAL(18,2) NOT NULL,
+        [Estado] NVARCHAR(20) NOT NULL,
+        [UsuarioCreacion] NVARCHAR(100) NOT NULL,
+        [FechaModificacion] DATETIME2(0) NULL,
+        [UsuarioModificacion] NVARCHAR(100) NULL,
+        [Activo] BIT NOT NULL,
+        [IdSolicitud] INT NULL,
+        [Moneda] NVARCHAR(10) NOT NULL,
 
-        CONSTRAINT [PK_RegistrosFacturacion] PRIMARY KEY CLUSTERED
-        (
-            [IdRegistroFacturacion] ASC
-        )
-        WITH
-        (
-            PAD_INDEX = OFF,
-            STATISTICS_NORECOMPUTE = OFF,
-            IGNORE_DUP_KEY = OFF,
-            ALLOW_ROW_LOCKS = ON,
-            ALLOW_PAGE_LOCKS = ON,
-            OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
-        ) ON [PRIMARY]
-    ) ON [PRIMARY];
+        CONSTRAINT PK_RegistrosFacturacion
+            PRIMARY KEY CLUSTERED (IdRegistroFacturacion)
+    );
 END;
 GO
 
-IF NOT EXISTS
-(
-    SELECT 1
-    FROM sys.foreign_keys
-    WHERE name = 'FK_RegistrosFacturacion_Empresas'
-      AND parent_object_id = OBJECT_ID('[dbo].[RegistrosFacturacion]')
-)
-BEGIN
-    ALTER TABLE [dbo].[RegistrosFacturacion]
-    WITH CHECK ADD CONSTRAINT [FK_RegistrosFacturacion_Empresas]
-    FOREIGN KEY ([IdEmpresa])
-    REFERENCES [dbo].[Empresas] ([IdEmpresa]);
-END;
-GO
+/* =========================================================
+   DEFAULTS
+   ========================================================= */
 
 IF NOT EXISTS
 (
     SELECT 1
     FROM sys.default_constraints
     WHERE name = 'DF_RegistrosFacturacion_FechaCreacion'
-      AND parent_object_id = OBJECT_ID('[dbo].[RegistrosFacturacion]')
 )
 BEGIN
-    ALTER TABLE [dbo].[RegistrosFacturacion]
-    ADD CONSTRAINT [DF_RegistrosFacturacion_FechaCreacion]
-    DEFAULT (SYSUTCDATETIME()) FOR [FechaCreacion];
+    ALTER TABLE dbo.RegistrosFacturacion
+    ADD CONSTRAINT DF_RegistrosFacturacion_FechaCreacion
+    DEFAULT (SYSUTCDATETIME()) FOR FechaCreacion;
 END;
 GO
 
@@ -1145,12 +1124,11 @@ IF NOT EXISTS
     SELECT 1
     FROM sys.default_constraints
     WHERE name = 'DF_RegistrosFacturacion_Estado'
-      AND parent_object_id = OBJECT_ID('[dbo].[RegistrosFacturacion]')
 )
 BEGIN
-    ALTER TABLE [dbo].[RegistrosFacturacion]
-    ADD CONSTRAINT [DF_RegistrosFacturacion_Estado]
-    DEFAULT ('PROCESADO') FOR [Estado];
+    ALTER TABLE dbo.RegistrosFacturacion
+    ADD CONSTRAINT DF_RegistrosFacturacion_Estado
+    DEFAULT ('PROCESADO') FOR Estado;
 END;
 GO
 
@@ -1159,12 +1137,73 @@ IF NOT EXISTS
     SELECT 1
     FROM sys.default_constraints
     WHERE name = 'DF_RegistrosFacturacion_Activo'
-      AND parent_object_id = OBJECT_ID('[dbo].[RegistrosFacturacion]')
 )
 BEGIN
-    ALTER TABLE [dbo].[RegistrosFacturacion]
-    ADD CONSTRAINT [DF_RegistrosFacturacion_Activo]
-    DEFAULT ((1)) FOR [Activo];
+    ALTER TABLE dbo.RegistrosFacturacion
+    ADD CONSTRAINT DF_RegistrosFacturacion_Activo
+    DEFAULT ((1)) FOR Activo;
+END;
+GO
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.default_constraints
+    WHERE name = 'DF_RegistrosFacturacion_Moneda'
+)
+BEGIN
+    ALTER TABLE dbo.RegistrosFacturacion
+    ADD CONSTRAINT DF_RegistrosFacturacion_Moneda
+    DEFAULT ('COP') FOR Moneda;
+END;
+GO
+
+/* =========================================================
+   FOREIGN KEYS
+   ========================================================= */
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.foreign_keys
+    WHERE name = 'FK_RegistrosFacturacion_Empresas'
+)
+BEGIN
+    ALTER TABLE dbo.RegistrosFacturacion
+    WITH CHECK ADD CONSTRAINT FK_RegistrosFacturacion_Empresas
+    FOREIGN KEY (IdEmpresa)
+    REFERENCES dbo.Empresas(IdEmpresa);
+END;
+GO
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.foreign_keys
+    WHERE name = 'FK_RegistrosFacturacion_SolicitudesCargaDocumentos'
+)
+BEGIN
+    ALTER TABLE dbo.RegistrosFacturacion
+    WITH CHECK ADD CONSTRAINT FK_RegistrosFacturacion_SolicitudesCargaDocumentos
+    FOREIGN KEY (IdSolicitud)
+    REFERENCES dbo.SolicitudesCargaDocumentos(IdSolicitud);
+END;
+GO
+
+/* =========================================================
+   CHECKS
+   ========================================================= */
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.check_constraints
+    WHERE name = 'CK_RegistrosFacturacion_Estado'
+)
+BEGIN
+    ALTER TABLE dbo.RegistrosFacturacion
+    WITH CHECK ADD CONSTRAINT CK_RegistrosFacturacion_Estado
+    CHECK (Estado IN ('PROCESADO','FACTURADO'));
 END;
 GO
 
@@ -1172,13 +1211,12 @@ IF NOT EXISTS
 (
     SELECT 1
     FROM sys.check_constraints
-    WHERE name = 'CK_RegistrosFacturacion_Estado'
-      AND parent_object_id = OBJECT_ID('[dbo].[RegistrosFacturacion]')
+    WHERE name = 'CK_RegistrosFacturacion_Moneda'
 )
 BEGIN
-    ALTER TABLE [dbo].[RegistrosFacturacion]
-    WITH CHECK ADD CONSTRAINT [CK_RegistrosFacturacion_Estado]
-    CHECK ([Estado] IN ('PROCESADO', 'FACTURADO'));
+    ALTER TABLE dbo.RegistrosFacturacion
+    WITH CHECK ADD CONSTRAINT CK_RegistrosFacturacion_Moneda
+    CHECK (Moneda IN ('COP','USD','SOL'));
 END;
 GO
 
@@ -1187,12 +1225,11 @@ IF NOT EXISTS
     SELECT 1
     FROM sys.check_constraints
     WHERE name = 'CK_RegistrosFacturacion_Valor'
-      AND parent_object_id = OBJECT_ID('[dbo].[RegistrosFacturacion]')
 )
 BEGIN
-    ALTER TABLE [dbo].[RegistrosFacturacion]
-    WITH CHECK ADD CONSTRAINT [CK_RegistrosFacturacion_Valor]
-    CHECK ([Valor] >= 0);
+    ALTER TABLE dbo.RegistrosFacturacion
+    WITH CHECK ADD CONSTRAINT CK_RegistrosFacturacion_Valor
+    CHECK (Valor >= 0);
 END;
 GO
 
@@ -1201,12 +1238,11 @@ IF NOT EXISTS
     SELECT 1
     FROM sys.check_constraints
     WHERE name = 'CK_RegistrosFacturacion_NumeroRegistro_NoVacio'
-      AND parent_object_id = OBJECT_ID('[dbo].[RegistrosFacturacion]')
 )
 BEGIN
-    ALTER TABLE [dbo].[RegistrosFacturacion]
-    WITH CHECK ADD CONSTRAINT [CK_RegistrosFacturacion_NumeroRegistro_NoVacio]
-    CHECK ((LTRIM(RTRIM([NumeroRegistro])) <> ''));
+    ALTER TABLE dbo.RegistrosFacturacion
+    WITH CHECK ADD CONSTRAINT CK_RegistrosFacturacion_NumeroRegistro_NoVacio
+    CHECK (LTRIM(RTRIM(NumeroRegistro)) <> '');
 END;
 GO
 
@@ -1215,12 +1251,11 @@ IF NOT EXISTS
     SELECT 1
     FROM sys.check_constraints
     WHERE name = 'CK_RegistrosFacturacion_Descripcion_NoVacio'
-      AND parent_object_id = OBJECT_ID('[dbo].[RegistrosFacturacion]')
 )
 BEGIN
-    ALTER TABLE [dbo].[RegistrosFacturacion]
-    WITH CHECK ADD CONSTRAINT [CK_RegistrosFacturacion_Descripcion_NoVacio]
-    CHECK ((LTRIM(RTRIM([Descripcion])) <> ''));
+    ALTER TABLE dbo.RegistrosFacturacion
+    WITH CHECK ADD CONSTRAINT CK_RegistrosFacturacion_Descripcion_NoVacio
+    CHECK (LTRIM(RTRIM(Descripcion)) <> '');
 END;
 GO
 
@@ -1229,12 +1264,52 @@ IF NOT EXISTS
     SELECT 1
     FROM sys.check_constraints
     WHERE name = 'CK_RegistrosFacturacion_UsuarioCreacion_NoVacio'
-      AND parent_object_id = OBJECT_ID('[dbo].[RegistrosFacturacion]')
 )
 BEGIN
-    ALTER TABLE [dbo].[RegistrosFacturacion]
-    WITH CHECK ADD CONSTRAINT [CK_RegistrosFacturacion_UsuarioCreacion_NoVacio]
-    CHECK ((LTRIM(RTRIM([UsuarioCreacion])) <> ''));
+    ALTER TABLE dbo.RegistrosFacturacion
+    WITH CHECK ADD CONSTRAINT CK_RegistrosFacturacion_UsuarioCreacion_NoVacio
+    CHECK (LTRIM(RTRIM(UsuarioCreacion)) <> '');
+END;
+GO
+
+/* =========================================================
+   ÍNDICES
+   ========================================================= */
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.indexes
+    WHERE name = 'IX_RegistrosFacturacion_Filtros'
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_RegistrosFacturacion_Filtros
+    ON dbo.RegistrosFacturacion
+    (
+        Activo,
+        Estado,
+        FechaCreacion,
+        IdEmpresa
+    )
+    INCLUDE
+    (
+        NumeroRegistro,
+        Descripcion,
+        Valor,
+        Moneda
+    );
+END;
+GO
+
+IF NOT EXISTS
+(
+    SELECT 1
+    FROM sys.indexes
+    WHERE name = 'IX_RegistrosFacturacion_IdEmpresa'
+)
+BEGIN
+    CREATE NONCLUSTERED INDEX IX_RegistrosFacturacion_IdEmpresa
+    ON dbo.RegistrosFacturacion(IdEmpresa);
 END;
 GO
 
