@@ -820,6 +820,250 @@ BEGIN
 END;
 GO
 
+    --Guillermo:
+
+--HU 006 06/07/2026
+CREATE TABLE dbo.SolicitudesCargaDocumentos
+(
+    IdSolicitud INT IDENTITY(1,1) NOT NULL,
+
+    Identificador UNIQUEIDENTIFIER NOT NULL
+        CONSTRAINT DF_SolicitudesCargaDocumentos_Identificador
+        DEFAULT NEWID(),
+
+    IdEmpresa INT NOT NULL,
+
+    CantidadArchivos INT NOT NULL,
+
+    Estado NVARCHAR(20) NOT NULL
+        CONSTRAINT DF_SolicitudesCargaDocumentos_Estado
+        DEFAULT 'Activo',
+
+    UsuarioCreacion NVARCHAR(100) NOT NULL,
+
+    FechaCreacion DATETIME2 NOT NULL
+        CONSTRAINT DF_SolicitudesCargaDocumentos_FechaCreacion
+        DEFAULT SYSUTCDATETIME(),
+
+    UsuarioModificacion NVARCHAR(100) NULL,
+
+    FechaModificacion DATETIME2 NULL,
+
+    CONSTRAINT PK_SolicitudesCargaDocumentos
+        PRIMARY KEY (IdSolicitud),
+
+    CONSTRAINT FK_SolicitudesCargaDocumentos_Empresas
+        FOREIGN KEY (IdEmpresa)
+        REFERENCES Empresas(IdEmpresa),
+
+    CONSTRAINT CK_SolicitudesCargaDocumentos_Cantidad
+        CHECK (CantidadArchivos > 0),
+
+    CONSTRAINT CK_SolicitudesCargaDocumentos_UsuarioCreacion
+        CHECK (LTRIM(RTRIM(UsuarioCreacion)) <> ''),
+
+    CONSTRAINT CK_SolicitudesCargaDocumentos_Estado
+        CHECK
+        (
+            Estado IN
+            (
+                'Activo',
+                'Inactivo',
+                'Procesado',
+                'Facturado',
+                'Inconsistencia'
+            )
+        )
+);
+
+-----------------------------------------------------
+CREATE TABLE dbo.SolicitudCargaDocumentoArchivos
+    (
+        IdArchivo INT IDENTITY(1,1) NOT NULL,
+
+        IdSolicitud INT NOT NULL,
+
+        NombreOriginal NVARCHAR(300) NOT NULL,
+
+        NombreServidor NVARCHAR(300) NOT NULL,
+
+        Ruta NVARCHAR(500) NOT NULL,
+
+        Extension NVARCHAR(10) NOT NULL,
+
+        Tamano BIGINT NOT NULL,
+
+        FechaCreacion DATETIME2 NOT NULL
+            CONSTRAINT DF_SolicitudCargaDocumentoArchivos_FechaCreacion
+            DEFAULT SYSUTCDATETIME(),
+
+        CONSTRAINT PK_SolicitudCargaDocumentoArchivos
+            PRIMARY KEY (IdArchivo),
+
+        CONSTRAINT FK_SolicitudCargaDocumentoArchivos_Solicitud
+            FOREIGN KEY (IdSolicitud)
+            REFERENCES SolicitudesCargaDocumentos(IdSolicitud)
+            ON DELETE CASCADE
+    );
+
+-----------------------------------------------
+CREATE OR ALTER PROCEDURE sp_ConsultarDocumentos
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+
+    SELECT
+
+        s.IdSolicitud,
+
+        s.Identificador,
+
+        e.IdEmpresa,
+
+        e.Nit,
+
+        e.RazonSocial AS Empresa,
+
+        s.CantidadArchivos,
+
+        s.UsuarioCreacion,
+
+        s.FechaCreacion,
+
+        s.UsuarioModificacion,
+
+        s.FechaModificacion,
+
+        s.Estado
+
+    FROM SolicitudesCargaDocumentos s
+
+    INNER JOIN Empresas e
+        ON e.IdEmpresa = s.IdEmpresa
+
+    ORDER BY s.FechaCreacion DESC;
+
+END
+GO
+
+---------------------------------------------------
+CREATE OR ALTER PROCEDURE sp_CrearDocumento
+(
+    @IdEmpresa INT,
+    @CantidadArchivos INT,
+    @UsuarioCreacion NVARCHAR(100)
+)
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+
+    INSERT INTO SolicitudesCargaDocumentos
+    (
+        IdEmpresa,
+        CantidadArchivos,
+        UsuarioCreacion
+    )
+    VALUES
+    (
+        @IdEmpresa,
+        @CantidadArchivos,
+        @UsuarioCreacion
+    );
+
+    SELECT SCOPE_IDENTITY();
+
+END
+GO
+-----------------------------------------------------
+CREATE OR ALTER PROCEDURE sp_CrearDocumentoArchivo
+(
+    @IdSolicitud INT,
+    @NombreOriginal NVARCHAR(300),
+    @NombreServidor NVARCHAR(300),
+    @Ruta NVARCHAR(500),
+    @Extension NVARCHAR(10),
+    @Tamano BIGINT
+)
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+
+    INSERT INTO SolicitudCargaDocumentoArchivos
+    (
+        IdSolicitud,
+        NombreOriginal,
+        NombreServidor,
+        Ruta,
+        Extension,
+        Tamano
+    )
+    VALUES
+    (
+        @IdSolicitud,
+        @NombreOriginal,
+        @NombreServidor,
+        @Ruta,
+        @Extension,
+        @Tamano
+    );
+
+END
+GO
+--------------------------------------------------------
+CREATE OR ALTER PROCEDURE sp_ActualizarDocumento
+(
+    @IdSolicitud INT,
+    @IdEmpresa INT,
+    @Estado NVARCHAR(20),
+    @CantidadArchivos INT,
+    @UsuarioModificacion NVARCHAR(100)
+)
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+
+    UPDATE SolicitudesCargaDocumentos
+    SET
+
+        IdEmpresa = @IdEmpresa,
+
+        Estado = @Estado,
+
+        CantidadArchivos =
+            CASE
+                WHEN @CantidadArchivos > 0
+                    THEN @CantidadArchivos
+                ELSE CantidadArchivos
+            END,
+
+        UsuarioModificacion = @UsuarioModificacion,
+
+        FechaModificacion = GETDATE()
+
+    WHERE IdSolicitud = @IdSolicitud;
+
+END
+GO
+----------------------------------------------------
+CREATE OR ALTER PROCEDURE sp_EliminarDocumentoArchivos
+(
+    @IdSolicitud INT
+)
+AS
+BEGIN
+
+    SET NOCOUNT ON;
+
+    DELETE
+    FROM SolicitudCargaDocumentoArchivos
+    WHERE IdSolicitud = @IdSolicitud;
+
+END
+GO
     
 /* =========================================================
    HU-008
